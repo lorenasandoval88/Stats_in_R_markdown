@@ -1,0 +1,306 @@
+---
+title: "final_binf702_spr22_Sandoval2"
+author: "Lorena Sandoval"
+date: "5/16/2022"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## binf702 final
+
+Problem 1
+ - Consider the Pima Indian data contained in the MASS package.Provide a table of of probability of correct classification results from a 1, 3, 5 nearest neighbor classifier. Train on Pima.tr and test on Pima.te.Be careful not to include the type column as this is effectively the class label.
+
+#KNN 1 cluster1
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+#---------------
+library(class)
+library(tidyverse) #ggplot and dplyr
+library(MASS) #Modern Applied Statistics with S
+
+train = Pima.tr[,-8]
+test = Pima.te[,-8]
+
+train.type =Pima.tr[,8]
+test.type =Pima.te[,8]
+set.seed (1)
+knn.pred1=knn(train,test,train.type ,k=1)
+table(knn.pred1 ,test.type)
+
+##this function divides the correct predictions by total number of predictions that tell us how accurate teh model is.
+accuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100}
+table(knn.pred1 ,test.type)
+#(174+53)/332
+#[1] 0.6837349
+
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+accuracy(table(knn.pred1 ,test.type))
+```
+accuracy for 1 clusters is 68%
+
+#KNN 3 clusters
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+knn.pred3=knn(train,test,train.type ,k=3)
+table(knn.pred3 ,test.type)
+#(192+64)/332
+#[1] 0.7710843
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+accuracy(table(knn.pred3 ,test.type))
+```
+accuracy for 3 clusters is 77%
+
+
+#KNN 5 clusters
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+knn.pred5=knn(train,test,train.type ,k=5)
+table(knn.pred5 ,test.type)
+# (196+66)/332
+# [1] 0.7891566
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+accuracy(table(knn.pred5 ,test.type))
+```
+
+accuracy for 5 clusters is 79%
+
+Problem 2
+ - Return to the Pima Indian data and provide probability of correct clasification results using a support vector machine. Once again train on Pima.tr and test on Pima.te.
+
+
+#SVM Classification
+```{r,echo = TRUE, warning=FALSE,  message=FALSE} 
+
+library(e1071)
+library(tidyverse) #ggplot and dplyr
+library(MASS) #Modern Applied Statistics with S
+
+train = Pima.tr#[,-8]
+test = Pima.te[,-8]
+
+set.seed (1)
+svmfit =svm(data=train ,type~.,type = "C-classification", kernel ="linear")
+svmPredict <- predict(svmfit, test)
+sum(svmPredict == Pima.te[,8]) / nrow(Pima.te)
+
+```
+probability of correct clasification is 80%
+
+Problem 3
+ - Repeat your analysis of problem 2 using Random Forests.
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+library (randomForest)
+set.seed (1)
+rforest =randomForest(x=train[,-8], y=as.factor(train$type),ntree = 1000, importance=TRUE, proximity=TRUE)
+table(rfpret = rforest$pred,training=Pima.tr[,8])
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+pv <- predict(rforest, Pima.te[,-8], type="class", proximity=TRUE)
+table(rfpredv=pv$pred,testing=Pima.te[,8])
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+# Probability of correct classification on testing data
+1- ((47+33)/332)
+```
+probability of correct clasification is 76%
+
+Problem 4 - 
+Return to your model of problem 3 and perform a variable importance plot based on MeanDecreaseGini.Identify the top 3 variables and discuss their biological relevance.
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+varImpPlot(rforest,
+ n.var = 7,
+ pch=19,
+ main=NULL,
+ col="red",
+ gcolor="blue",
+ lcolor="darkgreen")
+```
+
+The three most important variables are glucose in tolerance test, age, and diabetes pedigree function.
+
+The glucose tolerance test is a clinical test for diabetes or prediabetes .It is important in predicting diabetes in the dataset. 
+Age and pedigree are also important because family history and increased age can increase the likelihood of developing diabetes.
+
+Problem 5 - Consider the wines dataset contained in the kohonen package.Provide side by side boxplots of the original wines data along with the wines data that has been subjected to a column wise standardizing transformation.
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+# install.packages("kohonen")
+library(kohonen)
+ data(wines)
+dat =wines
+dat3 = scale(as.matrix(dat))
+par(mfrow=c(1,2))    # set the plotting area into a 1*2 array
+
+boxplot(dat)
+boxplot(dat3)
+```
+Problem 6
+ - In this problem we will use a new package to calculate the desired number of clusters in the wine data and then we will use this number along with hclust to create a cluster index which we will compare to the true labels indicating the region the wine grapes were grown in. [Hint - Please install the NbClust package and execute the following command to determine the number of clusters.]
+no_of_Clusters = NbClust(wines.sc, distance = “euclidean”, min.nc = 2, max.nc = 10, method = “complete”, index =“all”)
+Compare the obtained class labels to the true ones contained in vintages.
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+# install.packages("NbClust")
+library(NbClust)
+wines.sc = scale(wines, center = T, scale = T)
+no_of_Clusters = NbClust(data = wines.sc, diss=NULL,
+                         distance = "euclidean", min.nc = 2, max.nc = 10, method = "complete", index ="all")
+#Best number of clusters is 3
+labels = vintages
+library(factoextra)
+fviz_nbclust(no_of_Clusters)
+```
+
+
+Optimal number of clusters is 3
+
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+h= hclust(dist(wines.sc))
+plot(as.dendrogram(h))
+rect.hclust(h, k = 3)
+
+```
+
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+library(dendextend)
+dend <- as.dendrogram(h)
+COLS = c("red","green","blue")
+names(COLS) = unique(vintages)
+dend <- color_labels(dend, col = COLS[vintages[labels(dend)]])
+plot(dend) 
+legend("topleft", legend = c("Barolo", "Grignolino", "Barbera"), fill = COLS)
+```
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+clusters =cutree(h, k=3)
+class = factor(vintages, levels = c("Barolo", "Grignolino", "Barbera"))
+table(class, clusters)
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+accuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100}
+accuracy(table(class,clusters))
+```
+accuracy of hierarchical clustering is 83%
+
+
+Problem 7 - Repeat your analysis or problem 6 using kmeans. First run set.seed(0)
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+set.seed(0)
+wines.sc = scale(wines, center = T, scale = T)
+#rownames(wines.sc) <- vintages
+
+# kmeans
+km <- kmeans(wines.sc, 3, nstart = 20)
+
+
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+# plot the clusters
+fviz_cluster(km, data = wines.sc, geom ="point",
+             ellipse.type = "euclid",
+             ggtheme = theme_bw())
+```
+km$size# gives no. of records in each cluster
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+km$size# gives no. of records in each cluster
+```
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+class = factor(vintages, levels = c("Barolo", "Grignolino", "Barbera"))
+cluster =factor(km$cluster,levels =c(3,1,2))
+table(class, cluster)
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+accuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100}
+accuracy(table(class, cluster))
+```
+
+accuracy of kmeans clustering is 96%
+
+Problem 8
+ - Perform principle components analysis on the standardized wine data using prcomp.[Hint - Remember the data has already been centered and scaled]. How many principle components are needed to capture roughly 89% of the variance?
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+pc = prcomp(wines.sc, scale = F, center = F)
+plot(pc,type="l", main = "Variation explained by each PC")
+
+#Calc how much variation in the original data each principal component accounts for
+pca.var = pc$sdev^2
+pca.var.per = round(pca.var/sum(pca.var)*100,1)
+
+sum(pca.var.per[1:7])
+ 
+```
+The first 7 PCs hold 89% of the variance.
+
+Problem 9
+ - Make a plot of the scaled wines observations in the first two principle components. Plot “o” as the symbol and use red colors for the Barbera, green for the Barolo, and black for the Grigolino. Add in a legend in the bottom left portion of the plot.
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+library(ggfortify)
+library(ggplot2)
+wines.sc = scale(wines, center = T, scale = T)
+wines.sc = as.data.frame(wines.sc)
+class = vintages
+
+
+dat = wines.sc
+dat$class = class
+pc <- prcomp(wines.sc, scale = F)
+
+autoplot(pc, data = dat, colour ='class', shape = 'class')+
+        ggtitle("PCA plot")+
+        scale_colour_manual(values=c('red','green','black'))+
+        scale_shape_manual(values=c(1,1,1))+
+        theme(legend.position = 'right')+
+        theme(legend.justification = "bottom")
+        
+```
+Problem 10
+ - In this problem we will perform an analysis of the sacled wines data using Gaussian mixture-based clustering. [Hint - We will be using the mclust package and patterning our analysis after the tutorial contained here https://cran.r-project.org/web/packages/mclust/vignettes/mclust.html]
+Calculate the BIC values using the scaled wines data, call these wines.sc.BIC. plot these BIC values and using the summary method on the BIC object provide an interpretation as to which model is the best. Call Mclust to obtain a full model-based clustering solution on the scaled wines data, call it wines.sc.modl. You will be passing wines.sc to Mclust and setting x = wines.sc.BIC. Use the summary method to examine this object but do not set parameters = TRUE. Finally let’s compare the clustering obtained using Gaussian-based mixtures agains the ground truth. Ground truth will be the rows in the table as obtained from the vintages and the columns will be the mixture terms.
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+library(kohonen)
+library(mclust)
+data(wines)
+wines.sc = scale(wines, center = T, scale = T)
+class <- vintages
+table(class)
+pairs = clPairs(wines.sc, class)
+
+wines.sc.BIC <- mclustBIC(wines.sc)
+plot(wines.sc.BIC)
+
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+summary(wines.sc.BIC)
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+mod1 <- Mclust(wines.sc, x = wines.sc.BIC)
+summary(mod1, parameters = F)
+```
+
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+library(factoextra)
+fviz_mclust(mod1, 'classification')
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+class = factor(vintages, levels = c("Barolo", "Grignolino", "Barbera"))
+table(class, mod1$classification)
+```
+```{r, echo = TRUE, warning=FALSE,  message=FALSE}
+accuracy <- function(x){sum(diag(x)/(sum(rowSums(x)))) * 100}
+accuracy(table(class, mod1$classification))
+```
+
+The clustering was highly accurate at 97%
